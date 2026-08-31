@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "thegenie"
+version = "0.1.0"
+description = "Local academic retrieval and citation verification"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "mcp",
+  "pydantic-settings",
+  "pymupdf",
+  "qdrant-client",
+  "sentence-transformers",
+  "torch",
+  "tqdm",
+]
+
+[project.scripts]
+thegenie = "thegenie.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/thegenie"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
