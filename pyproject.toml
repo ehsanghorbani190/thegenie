@@ -5,8 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "thegenie"
 version = "0.1.0"
-description = "Local academic retrieval and citation verification"
+description = "Local MCP server that gives AI writing assistants verifiable, citable evidence from your own PDFs and checks every citation against the source before you trust it."
 requires-python = ">=3.11,<3.14"
+license = "MIT"
 dependencies = [
   "mcp",
   "pydantic-settings",
