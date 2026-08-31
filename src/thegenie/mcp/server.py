@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from thegenie.app import Application
 from thegenie.retrieval import format_mcp
 
 
-def create_server(app: Application | None = None) -> FastMCP:
+def create_server(app: Application | None = None) -> MCPServer:
     application = app or Application()
-    server = FastMCP(
+    server = MCPServer(
         "TheGenie Academic References",
         instructions=(
             "Search and inspect local academic passages. Relevance scores are not proof of support. "

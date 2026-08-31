@@ -244,10 +244,10 @@ class _AlternativeRetriever:
     def __init__(self, search: Any) -> None:
         self.search_service = search
 
-    def search(self, query: str, top_k: int = 3) -> tuple[dict[str, str], ...]:
+    def search(self, query: str, top_k: int = 3, document_filter: Any = None) -> tuple[dict[str, str], ...]:
         return tuple(
             {"citation_id": result.chunk.citation_id}
-            for result in self.search_service.search(query, top_k=top_k)
+            for result in self.search_service.search(query, top_k=top_k, document_filter=document_filter)
         )
 
 

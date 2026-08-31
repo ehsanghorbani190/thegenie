@@ -3,8 +3,9 @@ from __future__ import annotations
 import hashlib
 import re
 import statistics
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import Path
+from typing import Any, cast
 
 import pymupdf
 
@@ -30,7 +31,7 @@ def _clean_metadata(value: object) -> str | None:
     return value or None
 
 
-def _metadata(raw: dict[str, object]) -> DocumentMetadata:
+def _metadata(raw: Mapping[str, object]) -> DocumentMetadata:
     title = _clean_metadata(raw.get("title"))
     author = _clean_metadata(raw.get("author"))
     subject = _clean_metadata(raw.get("subject"))
@@ -48,7 +49,9 @@ def _metadata(raw: dict[str, object]) -> DocumentMetadata:
 
 
 def _iter_text_blocks(page: pymupdf.Page) -> Iterator[TextBlock]:
-    page_data = page.get_text("dict", sort=False)
+    # PyMuPDF's stubs don't narrow get_text()'s return type by the mode literal; "dict" mode
+    # always returns a dict at runtime (unlike "text"/"words"/etc., which return str/list).
+    page_data = cast("dict[str, Any]", page.get_text("dict", sort=False))
     for block in page_data.get("blocks", ()):
         if block.get("type") != 0:
             continue
@@ -61,9 +64,10 @@ def _iter_text_blocks(page: pymupdf.Page) -> Iterator[TextBlock]:
             continue
         sizes = [float(span.get("size", 0.0)) for span in spans]
         bold = any(int(span.get("flags", 0)) & 16 or "bold" in str(span.get("font", "")).lower() for span in spans)
+        x0, y0, x1, y1 = block.get("bbox", (0.0, 0.0, 0.0, 0.0))
         yield TextBlock(
             text=text,
-            bbox=tuple(float(value) for value in block.get("bbox", (0, 0, 0, 0))),
+            bbox=(float(x0), float(y0), float(x1), float(y1)),
             font_size=max(sizes, default=0.0),
             bold=bold,
         )
@@ -90,8 +94,11 @@ def extract_pdf(path: str | Path) -> ExtractedDocument:
     warnings: list[str] = []
     with pymupdf.open(source_path) as document:
         metadata = _metadata(document.metadata or {})
-        for index, page in enumerate(document, start=1):
-            text = page.get_text("text", sort=False)
+        # PyMuPDF's Document iterates over its pages at runtime; the stub doesn't declare __iter__.
+        pages_iter = cast(Iterable[pymupdf.Page], cast(object, document))
+        for index, page in enumerate(pages_iter, start=1):
+            # "text" mode always returns str at runtime; see the "dict" mode note above.
+            text = cast(str, page.get_text("text", sort=False))
             blocks = _mark_headings(tuple(_iter_text_blocks(page)))
             if not text.strip():
                 warnings.append(f"Page {index} contains no extractable text; it may be image-only.")

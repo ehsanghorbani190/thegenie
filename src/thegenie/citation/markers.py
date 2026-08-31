@@ -47,16 +47,18 @@ def validate_citation_fingerprint(*args: object) -> bool:
     """Validate a canonical fingerprint; two arguments retain text-only compatibility."""
     if len(args) == 2:
         text, expected = args
-        values = (text,)
+        compute = lambda length: citation_fingerprint(text, length=length)
     elif len(args) == 4:
         document_id, page, text, expected = args
-        values = (document_id, page, text)
+        if not isinstance(page, int) or not isinstance(text, str):
+            return False
+        compute = lambda length: citation_fingerprint(document_id, page, text, length=length)
     else:
         raise TypeError("expected (text, fingerprint) or (document_id, page, text, fingerprint)")
     if not isinstance(expected, str) or not 8 <= len(expected) <= 64:
         return False
     try:
-        actual = citation_fingerprint(*values, length=len(expected))
+        actual = compute(len(expected))
     except (TypeError, ValueError):
         return False
     return actual == expected.lower()

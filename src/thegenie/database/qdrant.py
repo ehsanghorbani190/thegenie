@@ -117,7 +117,7 @@ class QdrantRepository:
         *,
         document_hash: str | None = None,
     ) -> None:
-        conditions = [_match("document_id", str(document_id))]
+        conditions: list[models.Condition] = [_match("document_id", str(document_id))]
         if document_hash is not None:
             conditions.append(_match("document_hash", document_hash))
         self._delete_filter(models.Filter(must=conditions))
@@ -134,27 +134,15 @@ class QdrantRepository:
     ) -> list[VectorSearchResult]:
         if limit < 1:
             raise ValueError("limit must be positive")
-        query_filter = _search_filter(document_filter)
-        if hasattr(self.client, "query_points"):
-            response = self.client.query_points(
-                collection_name=self.collection_name,
-                query=list(vector),
-                query_filter=query_filter,
-                limit=limit,
-                with_payload=True,
-                with_vectors=False,
-            )
-            points = response.points
-        else:
-            points = self.client.search(
-                collection_name=self.collection_name,
-                query_vector=list(vector),
-                query_filter=query_filter,
-                limit=limit,
-                with_payload=True,
-                with_vectors=False,
-            )
-        return [VectorSearchResult(_payload_to_chunk(point.payload), float(point.score)) for point in points]
+        response = self.client.query_points(
+            collection_name=self.collection_name,
+            query=list(vector),
+            query_filter=_search_filter(document_filter),
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return [VectorSearchResult(_payload_to_chunk(point.payload), float(point.score)) for point in response.points]
 
     def get_chunk(self, citation_id: str) -> Chunk | None:
         records, _ = self.client.scroll(
@@ -265,7 +253,7 @@ def _search_filter(value: SearchFilter | UUID | str | None) -> models.Filter | N
                 _match("title", value),
             ]
         )
-    conditions = []
+    conditions: list[models.Condition] = []
     if value.document_id is not None:
         conditions.append(_match("document_id", str(value.document_id)))
     if value.filename is not None:

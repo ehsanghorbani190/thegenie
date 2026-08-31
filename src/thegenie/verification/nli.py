@@ -4,7 +4,7 @@ import importlib
 import math
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from .models import NLIScores
 
@@ -80,7 +80,9 @@ def _prediction_values(prediction: Any) -> list[float]:
     if hasattr(prediction, "tolist"):
         prediction = prediction.tolist()
     if isinstance(prediction, Mapping):
-        return [float(prediction[index]) for index in sorted(prediction)]
+        # The mapping's value type is only known at runtime (numpy/torch scalars, plain
+        # numbers, etc. depending on the underlying model); float() validates it for real.
+        return [float(cast(Any, prediction[index])) for index in sorted(prediction)]
     if not isinstance(prediction, Sequence) or isinstance(prediction, (str, bytes)):
         raise ValueError("NLI model returned an unsupported prediction")
     values: Any = prediction
