@@ -98,20 +98,25 @@ what this skill teaches, with English and Persian good/bad examples.
 Both Claude Code and OpenCode support the same `SKILL.md` format and the
 same trigger mechanism (a skill's `name`/`description` are always visible;
 the agent loads the full file only when it looks relevant), so one file
-works unmodified for both. It ships in two identical copies for maximum
-compatibility, since OpenCode looks for skills under either directory name:
+works unmodified for both, with no OpenCode-specific rewrite needed. It's
+checked into this repository at:
 
 - `.claude/skills/bare-claim-citations/SKILL.md`
-- `.opencode/skills/bare-claim-citations/SKILL.md`
+
+OpenCode's own skill discovery explicitly includes `.claude/skills/` as one
+of its project-level lookup paths (alongside `.opencode/skills/` and
+`.agents/skills/`), so this single copy is picked up by both agents without
+duplication.
 
 **Working directly in this repository:** nothing to install — both agents
-pick it up automatically from the paths above.
+pick it up automatically from the path above.
 
 **Using it in a different project** (the far more common case — you're
 usually drafting the actual paper somewhere else, with TheGenie wired in as
-an MCP server): copy the `bare-claim-citations/` folder (either copy works,
-they're identical) into that project, or install it globally so every
-project sees it:
+an MCP server): copy the `bare-claim-citations/` folder into that project,
+or install it globally so every project sees it. OpenCode will find it
+either under a copied `.claude/skills/` or its own `.opencode/skills/` — use
+whichever matches the target project's existing convention:
 
 ```bash
 # Per-project (place in the project you're drafting in)
