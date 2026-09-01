@@ -80,23 +80,45 @@ def split_sentences(text: str) -> list[str]:
     return [sentence.strip() for sentence in _SENTENCE_SPLIT.split(text) if sentence.strip()]
 
 
+def _best_overlap_sentence(claim: str, evidence: str) -> str | None:
+    """Find the evidence sentence sharing the most significant words with the claim.
+
+    A cheap, deterministic stand-in for a quote anchor when the claim paraphrases
+    rather than quotes — good enough to rule out unrelated sentences elsewhere in a
+    multi-paragraph chunk, without needing a model.
+    """
+    claim_words = {word for word in normalize_for_match(strip_ref_markers(claim)).split() if len(word) > 2}
+    if not claim_words:
+        return None
+    best_sentence, best_overlap = None, 1
+    for sentence in split_sentences(evidence):
+        sentence_words = {word for word in normalize_for_match(sentence).split() if len(word) > 2}
+        overlap = len(claim_words & sentence_words)
+        if overlap > best_overlap:
+            best_sentence, best_overlap = sentence, overlap
+    return best_sentence
+
+
 def _relevant_window(claim: str, evidence: str) -> str:
-    """Narrow evidence to the sentence(s) containing a quoted match, when present.
+    """Narrow evidence to the sentence(s) most relevant to the claim.
 
     Without this, checks that scan the full retrieved chunk (which can span several
     unrelated sentences) false-positive on incidental wording anywhere in the chunk
-    rather than near the claim's actual quoted evidence.
+    rather than near the claim's actual evidence. Prefers an exact quoted match; falls
+    back to lexical overlap for paraphrased claims with no quotation.
     """
     quotes = quoted_passages(strip_ref_markers(claim))
-    if not quotes:
+    if quotes:
+        normalized_quotes = [normalize_for_match(quote) for quote in quotes]
+        matches = [
+            sentence
+            for sentence in split_sentences(evidence)
+            if any(quote in normalize_for_match(sentence) for quote in normalized_quotes)
+        ]
+        if matches:
+            return " ".join(matches)
         return evidence
-    normalized_quotes = [normalize_for_match(quote) for quote in quotes]
-    matches = [
-        sentence
-        for sentence in split_sentences(evidence)
-        if any(quote in normalize_for_match(sentence) for quote in normalized_quotes)
-    ]
-    return " ".join(matches) if matches else evidence
+    return _best_overlap_sentence(claim, evidence) or evidence
 
 
 def _tokens(pattern: re.Pattern[str], text: str) -> set[str]:
@@ -122,12 +144,13 @@ def negation_check(claim: str, evidence: str) -> tuple[bool | None, str]:
 
 
 def strengthening_checks(claim: str, evidence: str) -> tuple[str, ...]:
+    window = _relevant_window(claim, evidence)
     findings: list[str] = []
-    if _CAUSAL.search(claim) and _ASSOCIATION.search(evidence) and not _CAUSAL.search(evidence):
+    if _CAUSAL.search(claim) and _ASSOCIATION.search(window) and not _CAUSAL.search(window):
         findings.append("claim strengthens association into causation")
-    if not _MODAL.search(claim) and _MODAL.search(evidence):
+    if not _MODAL.search(claim) and _MODAL.search(window):
         findings.append("claim removes modal uncertainty present in evidence")
-    if _EXCLUSIVE.search(claim) and not _EXCLUSIVE.search(evidence):
+    if _EXCLUSIVE.search(claim) and not _EXCLUSIVE.search(window):
         findings.append("claim adds exclusivity, primacy, or unsupported generalization")
     return tuple(findings)
 
