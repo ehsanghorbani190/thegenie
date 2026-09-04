@@ -1,14 +1,16 @@
 # Connecting an agent to TheGenie
 
 TheGenie exposes evidence retrieval to any MCP-capable coding agent through one
-read-only stdio server: `thegenie mcp`. It provides exactly two tools:
+read-only stdio server: `thegenie mcp`. It provides exactly three tools:
 
 - `search_references(query, top_k=5, document_filter=None)`
 - `get_reference(citation_id)`
+- `list_documents()` — filenames, document IDs, chunk counts, and index
+  timestamps for what's currently ingested; no document text.
 
 No agent runs `thegenie ingest`, `search`, `verify`, `revise`, `health`, or
 `models download` through MCP. Those remain human-operated CLI commands (see
-the main `README.md`). The agent only ever talks to the two tools above.
+the main `README.md`). The agent only ever talks to the tools above.
 
 ## Before configuring any agent
 
@@ -51,9 +53,10 @@ stdio server and the agent owns its stdin/stdout, not you.
 Regardless of which agent you configured, verification looks the same:
 
 1. Restart the agent (or reload its MCP servers) so it picks up the new config.
-2. List its MCP servers/tools and confirm two tools are registered, typically
-   named with the server name as a prefix, e.g. `academic-rag_search_references`
-   and `academic-rag_get_reference` (exact prefix/formatting varies by client).
+2. List its MCP servers/tools and confirm three tools are registered, typically
+   named with the server name as a prefix, e.g. `academic-rag_search_references`,
+   `academic-rag_get_reference`, and `academic-rag_list_documents` (exact
+   prefix/formatting varies by client).
 3. Give the agent an explicit prompt that names the tool, for example:
 
    ```text

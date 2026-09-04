@@ -2,7 +2,7 @@
 
 TheGenie is a local academic retrieval and citation-verification system for OpenCode. It extracts and chunks local PDFs, creates embeddings locally, stores vectors in a loopback-only Qdrant instance, reranks passages locally, and checks draft citations and claim support locally.
 
-TheGenie retrieves evidence; it is not a second writer model. OpenCode receives only the passages returned by its two read-only MCP tools—not complete PDFs, the vector index, or verification reports.
+TheGenie retrieves evidence; it is not a second writer model. OpenCode receives only the passages and document metadata returned by its read-only MCP tools—not complete PDFs, the vector index, or verification reports.
 
 > **Phase 1 status:** the runtime is implemented with manual smoke checks. An automated test suite and benchmark are deferred to Phase 2. The system can detect and help correct unsupported claims, but it cannot guarantee hallucination-free writing.
 
@@ -333,12 +333,15 @@ The server exposes only:
 
 - `academic-rag_search_references`
 - `academic-rag_get_reference`
+- `academic-rag_list_documents`
 
 OpenCode tool names are prefixed with the configured server name. If your installed UI renders punctuation differently, use the actual name shown in its tool trace.
 
 ### What OpenCode actually runs
 
-OpenCode runs only `thegenie mcp`. It discovers and invokes `search_references` and `get_reference` through the MCP protocol. It does **not** run `thegenie ingest`, `search`, `reference`, `verify`, `revise`, `citations`, `health`, or `models download`. Those are human-operated CLI commands.
+OpenCode runs only `thegenie mcp`. It discovers and invokes `search_references`, `get_reference`, and `list_documents` through the MCP protocol. It does **not** run `thegenie ingest`, `search`, `reference`, `verify`, `revise`, `citations`, `health`, or `models download`. Those are human-operated CLI commands.
+
+`list_documents` returns only filenames, document IDs, chunk counts, and index timestamps for what is currently ingested — no document text. Use it to see what evidence sources exist before searching, or to confirm a `--document-filter`/`document_filter` value is spelled correctly.
 
 Prompt explicitly when checking integration:
 

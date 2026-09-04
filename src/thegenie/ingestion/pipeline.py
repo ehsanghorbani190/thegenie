@@ -46,6 +46,14 @@ RepositoryFactory = Callable[[int], Repository]
 ProgressCallback = Callable[[int, int, IngestionItem], None]
 
 
+def load_manifest(settings: Settings) -> Manifest:
+    """Read the ingestion manifest without loading any embedder or repository."""
+    manifest_path = settings.metadata_path / "index.json"
+    if not manifest_path.exists():
+        return Manifest()
+    return Manifest.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+
+
 class IngestionPipeline:
     def __init__(
         self,
@@ -220,9 +228,7 @@ class IngestionPipeline:
         )
 
     def _load_manifest(self) -> Manifest:
-        if not self.manifest_path.exists():
-            return Manifest()
-        return Manifest.model_validate_json(self.manifest_path.read_text(encoding="utf-8"))
+        return load_manifest(self.settings)
 
     def _write_manifest(self, manifest: Manifest) -> None:
         self.manifest_path.parent.mkdir(parents=True, exist_ok=True)

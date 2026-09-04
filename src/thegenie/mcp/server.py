@@ -47,6 +47,17 @@ def create_server(app: Application | None = None) -> MCPServer:
             raise ValueError("reference not found")
         return reference
 
+    @server.tool(
+        description=(
+            "List locally indexed documents by filename, document ID, chunk count, and index time. "
+            "Returns no document text; use it only to see what sources exist before searching, "
+            "for example with document_filter."
+        )
+    )
+    def list_documents() -> list[dict[str, Any]]:
+        """Return known indexed documents without their content."""
+        return application.list_documents()
+
     return server
 
 

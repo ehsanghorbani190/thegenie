@@ -59,9 +59,10 @@ replacing the file.
 Notes on the fields:
 
 - `"academic-rag"` is the server name; OpenCode prefixes tool names with it
-  (`academic-rag_search_references`, `academic-rag_get_reference`). You can
-  rename it, but then use the actual resulting tool names everywhere else,
-  including in `AGENTS.md` if you customize it.
+  (`academic-rag_search_references`, `academic-rag_get_reference`,
+  `academic-rag_list_documents`). You can rename it, but then use the actual
+  resulting tool names everywhere else, including in `AGENTS.md` if you
+  customize it.
 - `timeout: 30000` (ms) covers first-call latency while models load into
   memory on first use after the server starts. Increase it if your machine is
   slow to load `BAAI/bge-m3` and the reranker.
@@ -94,9 +95,9 @@ accept a sourced-sounding answer as proof the tool actually ran.
 ## What OpenCode actually runs
 
 OpenCode starts exactly one long-running process, `thegenie mcp`, and only
-ever calls `search_references` and `get_reference` through it. It does **not**
-run `thegenie ingest`, `search`, `reference`, `verify`, `revise`, `citations`,
-`health`, or `models download` — those remain commands you run yourself in a
+ever calls `search_references`, `get_reference`, and `list_documents` through
+it. It does **not** run `thegenie ingest`, `search`, `reference`, `verify`,
+`revise`, `citations`, `health`, or `models download` — those remain commands you run yourself in a
 terminal.
 
 ## Project instructions (`AGENTS.md`)

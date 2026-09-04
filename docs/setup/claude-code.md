@@ -65,8 +65,8 @@ claude mcp list
 claude mcp get academic-rag
 ```
 
-`academic-rag` should show as connected, exposing `search_references` and
-`get_reference`.
+`academic-rag` should show as connected, exposing `search_references`,
+`get_reference`, and `list_documents`.
 
 ## 4. Confirm a real invocation
 
@@ -86,10 +86,10 @@ exact passage — not just a sourced-sounding answer.
 ## What Claude Code actually runs
 
 Claude Code starts exactly one long-running process, `thegenie mcp`, and only
-calls `search_references` and `get_reference` through it. It does **not** run
-`thegenie ingest`, `search`, `reference`, `verify`, `revise`, `citations`,
-`health`, or `models download` — those remain commands you run yourself in a
-terminal.
+calls `search_references`, `get_reference`, and `list_documents` through it.
+It does **not** run `thegenie ingest`, `search`, `reference`, `verify`,
+`revise`, `citations`, `health`, or `models download` — those remain commands
+you run yourself in a terminal.
 
 ## Project instructions (`AGENTS.md` / `CLAUDE.md`)
 

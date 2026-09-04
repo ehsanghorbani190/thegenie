@@ -85,10 +85,10 @@ documentation.
 ## After configuring: verify, don't assume
 
 1. Restart the client (or reload its MCP servers) so it picks up the change.
-2. List its configured/connected MCP servers and confirm two tools are
-   registered: `search_references` and `get_reference` (possibly prefixed
-   with the server name, e.g. `academic-rag_search_references`, depending on
-   the client).
+2. List its configured/connected MCP servers and confirm three tools are
+   registered: `search_references`, `get_reference`, and `list_documents`
+   (possibly prefixed with the server name, e.g.
+   `academic-rag_search_references`, depending on the client).
 3. Prompt it explicitly, naming the tool:
 
    ```text
@@ -105,10 +105,12 @@ documentation.
 
 ## What the agent can and cannot do through this server
 
-Regardless of client, only two read-only tools are exposed:
+Regardless of client, only three read-only tools are exposed:
 
 - `search_references(query, top_k=5, document_filter=None)`
 - `get_reference(citation_id)`
+- `list_documents()` — filenames, document IDs, chunk counts, and index
+  timestamps for what's currently ingested; no document text.
 
 No agent can ingest documents, run verification, check health, or download
 models through MCP — those are commands you run yourself:

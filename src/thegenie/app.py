@@ -143,6 +143,20 @@ class Application:
     def get_reference(self, citation_id: str) -> dict[str, Any] | None:
         return self.references.get_reference(citation_id)
 
+    def list_documents(self) -> list[dict[str, Any]]:
+        from thegenie.ingestion import load_manifest
+
+        manifest = load_manifest(self.settings)
+        return [
+            {
+                "document_id": str(entry.document_id),
+                "source_path": str(entry.source_path),
+                "chunk_count": entry.chunk_count,
+                "indexed_at": entry.indexed_at.isoformat(),
+            }
+            for _, entry in sorted(manifest.documents.items())
+        ]
+
     def verify(self, document: Path, *, strict: bool = False) -> tuple[Any, Path]:
         from thegenie.verification import ClaimVerifier, LazyCrossEncoderNLI, write_json_report
 

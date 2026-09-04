@@ -5,7 +5,7 @@ These instructions govern academic research and writing in this project.
 ## Core standard
 
 - Treat TheGenie as a local evidence-retrieval system, not as an authority or writer model.
-- Use the `academic-rag_search_references` and `academic-rag_get_reference` MCP tools for local literature evidence. The installed tool prefix may differ if the MCP server is configured under another name; use the actual registered names.
+- Use the `academic-rag_search_references` and `academic-rag_get_reference` MCP tools for local literature evidence, and `academic-rag_list_documents` only to see what sources are indexed (filenames, IDs, chunk counts — no document text). The installed tool prefix may differ if the MCP server is configured under another name; use the actual registered names.
 - Never claim that TheGenie, retrieval, citation validation, NLI, or any language model makes hallucinations impossible.
 - Distinguish clearly among source evidence, general knowledge, inference, interpretation, recommendation, and uncertainty.
 - For serious academic work, require human review of the original source and surrounding page context before final submission.
@@ -79,4 +79,4 @@ OpenCode starts one long-running stdio process:
 uv run --directory /ABSOLUTE/PATH/TO/thegenie thegenie mcp
 ```
 
-Through that process, OpenCode may invoke only the read-only MCP tools `search_references` and `get_reference`. Other `thegenie` commands—ingestion, direct search/reference inspection, citation listing, verification, revision planning, health, and model download—are operator workflows, not MCP tools. When evidence use is questioned, inspect OpenCode’s visible tool trace and identify the actual MCP tool invocation rather than asserting that retrieval occurred.
+Through that process, OpenCode may invoke only the read-only MCP tools `search_references`, `get_reference`, and `list_documents`. Other `thegenie` commands—ingestion, direct search/reference inspection, citation listing, verification, revision planning, health, and model download—are operator workflows, not MCP tools. When evidence use is questioned, inspect OpenCode’s visible tool trace and identify the actual MCP tool invocation rather than asserting that retrieval occurred.
