@@ -35,7 +35,7 @@ server for evidence):
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "academic-rag": {
+    "thegenie": {
       "type": "local",
       "command": [
         "uv",
@@ -53,14 +53,14 @@ server for evidence):
 ```
 
 If `opencode.json` already has other `mcp` entries or top-level keys, merge
-this `academic-rag` entry into the existing `mcp` object rather than
+this `thegenie` entry into the existing `mcp` object rather than
 replacing the file.
 
 Notes on the fields:
 
-- `"academic-rag"` is the server name; OpenCode prefixes tool names with it
-  (`academic-rag_search_references`, `academic-rag_get_reference`,
-  `academic-rag_list_documents`). You can rename it, but then use the actual
+- `"thegenie"` is the server name; OpenCode prefixes tool names with it
+  (`thegenie_search_references`, `thegenie_get_reference`,
+  `thegenie_list_documents`). You can rename it, but then use the actual
   resulting tool names everywhere else, including in `AGENTS.md` if you
   customize it.
 - `timeout: 30000` (ms) covers first-call latency while models load into
@@ -73,22 +73,22 @@ Notes on the fields:
 opencode mcp list
 ```
 
-`academic-rag` should show as connected. If not, see Troubleshooting below.
+`thegenie` should show as connected. If not, see Troubleshooting below.
 
 ## 5. Confirm tool discovery and a real invocation
 
 Ask OpenCode, in a prompt that names the tool explicitly:
 
 ```text
-Use academic-rag_search_references to find local evidence about <a topic you
+Use thegenie_search_references to find local evidence about <a topic you
 know is in your ingested PDFs>. Show the exact returned citation marker and
-passage. Then use academic-rag_get_reference on that citation ID before
+passage. Then use thegenie_get_reference on that citation ID before
 making any claim.
 ```
 
 Expand OpenCode's tool-call/activity trace. You should see
-`academic-rag_search_references` invoked with your query, followed by
-`academic-rag_get_reference` when exact provenance is requested. The result
+`thegenie_search_references` invoked with your query, followed by
+`thegenie_get_reference` when exact provenance is requested. The result
 must contain a real local citation ID, page number, and exact passage — don't
 accept a sourced-sounding answer as proof the tool actually ran.
 

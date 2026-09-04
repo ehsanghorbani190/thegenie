@@ -25,7 +25,7 @@ than one combined array:
 ```json
 {
   "mcpServers": {
-    "academic-rag": {
+    "thegenie": {
       "command": "uv",
       "args": [
         "run",
@@ -55,7 +55,7 @@ Where this file lives is client-specific:
   path; the `mcpServers` → `command`/`args` shape above is the most common
   starting point.
 
-If the config already has other servers, merge the `academic-rag` entry into
+If the config already has other servers, merge the `thegenie` entry into
 the existing `mcpServers` object rather than replacing the file.
 
 ## If your client wants one combined command array instead
@@ -65,7 +65,7 @@ instead of separate `command`/`args`:
 
 ```json
 {
-  "academic-rag": {
+  "thegenie": {
     "command": [
       "uv",
       "run",
@@ -88,11 +88,11 @@ documentation.
 2. List its configured/connected MCP servers and confirm three tools are
    registered: `search_references`, `get_reference`, and `list_documents`
    (possibly prefixed with the server name, e.g.
-   `academic-rag_search_references`, depending on the client).
+   `thegenie_search_references`, depending on the client).
 3. Prompt it explicitly, naming the tool:
 
    ```text
-   Use the academic-rag search tool to find local evidence about <a topic you
+   Use the thegenie search tool to find local evidence about <a topic you
    know is in your ingested PDFs>. Show the exact returned citation marker
    and passage, then resolve that citation ID with the get_reference tool
    before stating anything as fact.

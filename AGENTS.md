@@ -5,7 +5,7 @@ These instructions govern academic research and writing in this project.
 ## Core standard
 
 - Treat TheGenie as a local evidence-retrieval system, not as an authority or writer model.
-- Use the `academic-rag_search_references` and `academic-rag_get_reference` MCP tools for local literature evidence, and `academic-rag_list_documents` only to see what sources are indexed (filenames, IDs, chunk counts — no document text). The installed tool prefix may differ if the MCP server is configured under another name; use the actual registered names.
+- Use the `thegenie_search_references` and `thegenie_get_reference` MCP tools for local literature evidence, and `thegenie_list_documents` only to see what sources are indexed (filenames, IDs, chunk counts — no document text). The installed tool prefix may differ if the MCP server is configured under another name; use the actual registered names.
 - Never claim that TheGenie, retrieval, citation validation, NLI, or any language model makes hallucinations impossible.
 - Distinguish clearly among source evidence, general knowledge, inference, interpretation, recommendation, and uncertainty.
 - For serious academic work, require human review of the original source and surrounding page context before final submission.
@@ -16,7 +16,7 @@ These instructions govern academic research and writing in this project.
 2. Identify which claims require literature evidence: quotations, numerical or dated statements, attributed findings, methodological statements, comparisons, causal claims, and claims about prior research normally require support.
 3. Search separately for each claim or tightly related claim group. Use a specific query expressing the proposition, population, context, and relevant variables rather than a broad topic alone.
 4. Inspect every returned passage. A relevance estimate is only a ranking signal; it is not evidence that the passage entails the claim.
-5. Resolve promising citation IDs with `academic-rag_get_reference` when exact provenance, wording, page, or metadata matters.
+5. Resolve promising citation IDs with `thegenie_get_reference` when exact provenance, wording, page, or metadata matters.
 6. Prefer the strongest available primary source. Use systematic reviews or other secondary sources for synthesis, not as a substitute for an available primary source when making a specific empirical claim.
 7. Seek independent sources for important, disputed, causal, safety-relevant, or high-impact claims. Do not treat multiple passages from one document as independent corroboration.
 8. Draft only what the inspected passages support. Preserve qualifiers, population, jurisdiction, time period, uncertainty, direction, and effect strength.

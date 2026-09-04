@@ -298,7 +298,7 @@ Create or merge this exact JSON into `opencode.json` in the project where you ru
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "academic-rag": {
+    "thegenie": {
       "type": "local",
       "command": [
         "uv",
@@ -331,9 +331,9 @@ opencode mcp list
 
 The server exposes only:
 
-- `academic-rag_search_references`
-- `academic-rag_get_reference`
-- `academic-rag_list_documents`
+- `thegenie_search_references`
+- `thegenie_get_reference`
+- `thegenie_list_documents`
 
 OpenCode tool names are prefixed with the configured server name. If your installed UI renders punctuation differently, use the actual name shown in its tool trace.
 
@@ -346,12 +346,12 @@ OpenCode runs only `thegenie mcp`. It discovers and invokes `search_references`,
 Prompt explicitly when checking integration:
 
 ```text
-Use academic-rag_search_references to find local evidence about trust formation.
+Use thegenie_search_references to find local evidence about trust formation.
 Show the exact returned citation marker and passage. Then use
-academic-rag_get_reference on that citation ID before making a claim.
+thegenie_get_reference on that citation ID before making a claim.
 ```
 
-Do not infer successful retrieval merely because the answer sounds sourced. Expand OpenCode’s tool-call/activity trace and confirm the actual invocation name, arguments, and result. You should see `academic-rag_search_references`, followed by `academic-rag_get_reference` when exact provenance is requested. The returned result must contain a local citation ID, page, and exact passage.
+Do not infer successful retrieval merely because the answer sounds sourced. Expand OpenCode’s tool-call/activity trace and confirm the actual invocation name, arguments, and result. You should see `thegenie_search_references`, followed by `thegenie_get_reference` when exact provenance is requested. The returned result must contain a local citation ID, page, and exact passage.
 
 For startup diagnostics, run OpenCode with logs visible:
 
@@ -510,7 +510,7 @@ Restore the indexed source or reingest its current version. Do not silently subs
 
 ### OpenCode answers without using local evidence
 
-Ask it explicitly to use `academic-rag_search_references`, and inspect the tool trace. An answer with no visible MCP invocation and no exact returned `[[REF:...]]` marker is not evidence that TheGenie was consulted.
+Ask it explicitly to use `thegenie_search_references`, and inspect the tool trace. An answer with no visible MCP invocation and no exact returned `[[REF:...]]` marker is not evidence that TheGenie was consulted.
 
 ### Verification rejects a plausible claim
 

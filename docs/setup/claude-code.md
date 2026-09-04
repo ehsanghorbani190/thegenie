@@ -17,7 +17,7 @@ below.
 ### Option A — CLI (recommended for a quick, local-only setup)
 
 ```bash
-claude mcp add academic-rag -- uv run --directory /ABSOLUTE/PATH/TO/thegenie thegenie mcp
+claude mcp add thegenie -- uv run --directory /ABSOLUTE/PATH/TO/thegenie thegenie mcp
 ```
 
 This defaults to `local` scope (visible only to you, in this project). Add
@@ -25,7 +25,7 @@ This defaults to `local` scope (visible only to you, in this project). Add
 with everyone working in the project:
 
 ```bash
-claude mcp add academic-rag --scope project -- uv run --directory /ABSOLUTE/PATH/TO/thegenie thegenie mcp
+claude mcp add thegenie --scope project -- uv run --directory /ABSOLUTE/PATH/TO/thegenie thegenie mcp
 ```
 
 ### Option B — project-scoped `.mcp.json`
@@ -37,7 +37,7 @@ itself):
 ```json
 {
   "mcpServers": {
-    "academic-rag": {
+    "thegenie": {
       "command": "uv",
       "args": [
         "run",
@@ -51,7 +51,7 @@ itself):
 }
 ```
 
-If `.mcp.json` already exists with other servers, merge `academic-rag` into
+If `.mcp.json` already exists with other servers, merge `thegenie` into
 the existing `mcpServers` object.
 
 ## 3. Approve and verify
@@ -62,10 +62,10 @@ if you used the CLI, which doesn't require approval), verify:
 
 ```bash
 claude mcp list
-claude mcp get academic-rag
+claude mcp get thegenie
 ```
 
-`academic-rag` should show as connected, exposing `search_references`,
+`thegenie` should show as connected, exposing `search_references`,
 `get_reference`, and `list_documents`.
 
 ## 4. Confirm a real invocation
@@ -73,13 +73,13 @@ claude mcp get academic-rag
 In a Claude Code session, prompt explicitly:
 
 ```text
-Use the academic-rag search_references tool to find local evidence about
+Use the thegenie search_references tool to find local evidence about
 <a topic you know is in your ingested PDFs>. Show the exact returned citation
 marker and passage. Then use get_reference on that citation ID before making
 any claim.
 ```
 
-Check the visible tool-call trace for the actual `academic-rag` invocation,
+Check the visible tool-call trace for the actual `thegenie` invocation,
 its arguments, and a result containing a real citation ID, page number, and
 exact passage — not just a sourced-sounding answer.
 
@@ -124,6 +124,6 @@ Claude Code.
 ### Removing or resetting
 
 ```bash
-claude mcp remove academic-rag
+claude mcp remove thegenie
 claude mcp reset-project-choices   # if you need to re-approve a project .mcp.json entry
 ```

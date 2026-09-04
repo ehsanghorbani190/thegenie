@@ -54,13 +54,13 @@ Regardless of which agent you configured, verification looks the same:
 
 1. Restart the agent (or reload its MCP servers) so it picks up the new config.
 2. List its MCP servers/tools and confirm three tools are registered, typically
-   named with the server name as a prefix, e.g. `academic-rag_search_references`,
-   `academic-rag_get_reference`, and `academic-rag_list_documents` (exact
+   named with the server name as a prefix, e.g. `thegenie_search_references`,
+   `thegenie_get_reference`, and `thegenie_list_documents` (exact
    prefix/formatting varies by client).
 3. Give the agent an explicit prompt that names the tool, for example:
 
    ```text
-   Use the academic-rag search tool to find local evidence about <a topic you
+   Use the thegenie search tool to find local evidence about <a topic you
    know is in your ingested PDFs>. Show the exact returned citation marker and
    passage, then resolve that citation ID with the get_reference tool before
    stating anything as fact.
