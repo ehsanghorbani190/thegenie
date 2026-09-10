@@ -1,3 +1,3 @@
-from .qdrant import QdrantRepository, RepositoryHealth, VectorSearchResult
+from .qdrant import IndexedDocument, QdrantRepository, RepositoryHealth, VectorSearchResult
 
-__all__ = ["QdrantRepository", "RepositoryHealth", "VectorSearchResult"]
+__all__ = ["IndexedDocument", "QdrantRepository", "RepositoryHealth", "VectorSearchResult"]

@@ -27,6 +27,16 @@ class VectorSearchResult:
 
 
 @dataclass(frozen=True)
+class IndexedDocument:
+    """One (document_id, document_hash) group actually present in the collection."""
+
+    document_id: str
+    document_hash: str
+    source_path: str
+    chunk_count: int
+
+
+@dataclass(frozen=True)
 class RepositoryHealth:
     reachable: bool
     collection_exists: bool
@@ -64,6 +74,26 @@ class QdrantRepository:
         **client_kwargs: Any,
     ) -> QdrantRepository:
         return cls(QdrantClient(url=url, **client_kwargs), collection_name, vector_size)
+
+    @classmethod
+    def connect(
+        cls,
+        url: str,
+        collection_name: str,
+        **client_kwargs: Any,
+    ) -> QdrantRepository:
+        """Attach to an existing collection, adopting its configured vector size.
+
+        Read/delete-only callers use this to avoid loading an embedding model purely to
+        discover the vector dimension.
+        """
+        client = QdrantClient(url=url, **client_kwargs)
+        if not client.collection_exists(collection_name):
+            raise ValueError(f"collection {collection_name!r} does not exist")
+        vectors = client.get_collection(collection_name).config.params.vectors
+        if not isinstance(vectors, models.VectorParams):
+            raise ValueError("named-vector collections are not supported")
+        return cls(client, collection_name, int(vectors.size))
 
     def ensure_collection(self) -> None:
         if not self.client.collection_exists(self.collection_name):
@@ -193,6 +223,40 @@ class QdrantRepository:
             )
             if offset is None:
                 return len(document_ids)
+
+    def indexed_documents(self) -> tuple[IndexedDocument, ...]:
+        """Group every stored point by (document_id, document_hash).
+
+        Prune compares this against the manifest: a group the manifest does not list is
+        orphaned, which happens when an ingest run is interrupted after chunks are
+        upserted but before the manifest entry is written.
+        """
+        counts: dict[tuple[str, str], int] = {}
+        paths: dict[tuple[str, str], str] = {}
+        offset: Any = None
+        while True:
+            records, offset = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=256,
+                offset=offset,
+                with_payload=["document_id", "document_hash", "source_path", "filename"],
+                with_vectors=False,
+            )
+            for record in records:
+                payload = record.payload or {}
+                document_id = payload.get("document_id")
+                document_hash = payload.get("document_hash")
+                if document_id is None or document_hash is None:
+                    continue
+                key = (str(document_id), str(document_hash))
+                counts[key] = counts.get(key, 0) + 1
+                paths.setdefault(key, str(payload.get("source_path") or payload.get("filename") or ""))
+            if offset is None:
+                break
+        return tuple(
+            IndexedDocument(document_id, document_hash, paths[(document_id, document_hash)], count)
+            for (document_id, document_hash), count in sorted(counts.items())
+        )
 
     def health(self) -> RepositoryHealth:
         try:

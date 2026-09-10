@@ -65,7 +65,6 @@ class IngestionStatus(StrEnum):
     CHANGED = "changed"
     UNCHANGED = "unchanged"
     FAILED = "failed"
-    PRUNED = "pruned"
 
 
 class IngestionItem(Model):
@@ -80,6 +79,25 @@ class IngestionReport(Model):
     found: int = Field(ge=0)
     updated_chunks: int = Field(ge=0)
     items: tuple[IngestionItem, ...] = ()
+
+
+class PruneReason(StrEnum):
+    MISSING_SOURCE = "missing_source"
+    ORPHAN_VECTORS = "orphan_vectors"
+
+
+class PruneItem(Model):
+    source_path: Path
+    reason: PruneReason
+    document_id: UUID | None = None
+    chunk_count: int = Field(default=0, ge=0)
+    error: str | None = None
+
+
+class PruneReport(Model):
+    removed_chunks: int = Field(default=0, ge=0)
+    dry_run: bool = False
+    items: tuple[PruneItem, ...] = ()
 
 
 class SearchFilter(Model):

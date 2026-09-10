@@ -111,7 +111,7 @@ class Application:
             )
         return self._search
 
-    def ingest(self, path: Path, *, prune: bool = False, on_progress: Any = None) -> Any:
+    def ingest(self, path: Path, *, on_progress: Any = None, on_activity: Any = None) -> Any:
         from thegenie.ingestion import IngestionPipeline
 
         settings = self.settings
@@ -120,7 +120,13 @@ class Application:
             embedder=self.embedder,
             repository_factory=lambda dimension: self._make_repository(dimension),
         )
-        return pipeline.ingest(path, prune=prune, on_progress=on_progress)
+        return pipeline.ingest(path, on_progress=on_progress, on_activity=on_activity)
+
+    def prune(self, path: Path | None = None, *, dry_run: bool = False) -> Any:
+        """Delete indexed data for removed PDFs and orphaned vectors, loading no model."""
+        from thegenie.ingestion import prune_index
+
+        return prune_index(self.settings, path, dry_run=dry_run)
 
     def _make_repository(self, dimension: int) -> Any:
         from thegenie.database import QdrantRepository

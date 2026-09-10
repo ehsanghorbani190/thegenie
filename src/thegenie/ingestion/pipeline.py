@@ -44,14 +44,39 @@ class Repository(Protocol):
 
 RepositoryFactory = Callable[[int], Repository]
 ProgressCallback = Callable[[int, int, IngestionItem], None]
+ActivityCallback = Callable[[str, int, int], None]
+"""Called as (document_key, chunks_embedded, chunks_total) while a document is in flight.
+
+``chunks_total`` is 0 until chunking has determined it, which lets a caller display the
+document being worked on before its chunk count is known.
+"""
+
+
+def manifest_path(settings: Settings) -> Path:
+    return settings.metadata_path / "index.json"
 
 
 def load_manifest(settings: Settings) -> Manifest:
     """Read the ingestion manifest without loading any embedder or repository."""
-    manifest_path = settings.metadata_path / "index.json"
-    if not manifest_path.exists():
+    path = manifest_path(settings)
+    if not path.exists():
         return Manifest()
-    return Manifest.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+    return Manifest.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def save_manifest(path: Path, manifest: Manifest) -> None:
+    """Replace the manifest atomically so an interrupted write cannot truncate it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(f"{path.suffix}.tmp")
+    try:
+        with temporary.open("w", encoding="utf-8") as target:
+            _ = target.write(manifest.model_dump_json(indent=2))
+            _ = target.write("\n")
+            target.flush()
+            os.fsync(target.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 class IngestionPipeline:
@@ -80,14 +105,14 @@ class IngestionPipeline:
                 dimension,
             )
         )
-        self.manifest_path: Path = self.settings.metadata_path / "index.json"
+        self.manifest_path: Path = manifest_path(self.settings)
 
     def ingest(
         self,
         path: str | Path,
-        prune: bool = False,
         *,
         on_progress: ProgressCallback | None = None,
+        on_activity: ActivityCallback | None = None,
     ) -> IngestionReport:
         scan_path = Path(path).resolve()
         if not scan_path.exists():
@@ -104,9 +129,7 @@ class IngestionPipeline:
         updated_chunks = 0
         repository: Repository | None = self.repository
 
-        present = {key for key, _ in keyed_files}
-        prunable_keys = self._prunable_keys(manifest, scan_path, base, present) if prune else []
-        total = len(keyed_files) + len(prunable_keys)
+        total = len(keyed_files)
         done = 0
 
         def report(item: IngestionItem) -> None:
@@ -127,6 +150,8 @@ class IngestionPipeline:
             document_id = previous.document_id if previous else uuid4()
             status = IngestionStatus.CHANGED if previous else IngestionStatus.NEW
             try:
+                if on_activity:
+                    on_activity(key, 0, 0)
                 extracted = extract_pdf(source)
                 records = chunk_pages(
                     extracted.pages,
@@ -139,9 +164,15 @@ class IngestionPipeline:
                 chunks = [self._chunk(record, extracted, Path(key), document_hash) for record in records]
                 repository = repository or self._repository()
                 repository.ensure_collection()
+                if on_activity:
+                    on_activity(key, 0, len(chunks))
+                embedded = 0
                 for start in range(0, len(chunks), self.settings.embedding_batch_size):
                     batch = chunks[start : start + self.settings.embedding_batch_size]
                     repository.upsert_chunks(batch, self.embedder.embed_documents([chunk.text for chunk in batch]))
+                    embedded += len(batch)
+                    if on_activity:
+                        on_activity(key, embedded, len(chunks))
                 if previous:
                     repository.delete_document(document_id, document_hash=previous.document_hash)
                 manifest.documents[key] = ManifestEntry(
@@ -160,23 +191,6 @@ class IngestionPipeline:
                 item = IngestionItem(source_path=Path(key), status=IngestionStatus.FAILED, document_id=document_id, error=str(exc))
                 items.append(item)
                 report(item)
-
-        if prune:
-            for key in prunable_keys:
-                entry = manifest.documents[key]
-                try:
-                    repository = repository or self._repository()
-                    repository.ensure_collection()
-                    repository.delete_document(entry.document_id, document_hash=entry.document_hash)
-                    del manifest.documents[key]
-                    self._write_manifest(manifest)
-                    item = IngestionItem(source_path=entry.source_path, status=IngestionStatus.PRUNED, document_id=entry.document_id, chunk_count=entry.chunk_count)
-                    items.append(item)
-                    report(item)
-                except Exception as exc:
-                    item = IngestionItem(source_path=entry.source_path, status=IngestionStatus.FAILED, document_id=entry.document_id, error=str(exc))
-                    items.append(item)
-                    report(item)
 
         return IngestionReport(found=len(discovered), updated_chunks=updated_chunks, items=tuple(items))
 
@@ -231,26 +245,6 @@ class IngestionPipeline:
         return load_manifest(self.settings)
 
     def _write_manifest(self, manifest: Manifest) -> None:
-        self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.manifest_path.with_suffix(f"{self.manifest_path.suffix}.tmp")
-        try:
-            with temporary.open("w", encoding="utf-8") as target:
-                _ = target.write(manifest.model_dump_json(indent=2))
-                _ = target.write("\n")
-                target.flush()
-                os.fsync(target.fileno())
-            os.replace(temporary, self.manifest_path)
-        finally:
-            temporary.unlink(missing_ok=True)
+        save_manifest(self.manifest_path, manifest)
 
-    @classmethod
-    def _prunable_keys(cls, manifest: Manifest, scan_path: Path, base: Path, present: set[str]) -> list[str]:
-        if scan_path.is_file():
-            scope = {cls._manifest_key(scan_path, base)}
-            return sorted(scope.intersection(manifest.documents).difference(present))
-        keys: list[str] = []
-        for key, entry in manifest.documents.items():
-            source = (base / entry.source_path).resolve()
-            if source.is_relative_to(scan_path) and key not in present:
-                keys.append(key)
-        return sorted(keys)
+

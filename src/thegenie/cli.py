@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Any, Sequence
@@ -17,7 +18,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     ingest = commands.add_parser("ingest", help="Index PDFs from a file or directory")
     ingest.add_argument("path", type=Path)
-    ingest.add_argument("--prune", action="store_true", help="Remove indexed PDFs missing beneath PATH")
+
+    prune = commands.add_parser(
+        "prune",
+        help="Delete indexed data for removed PDFs and orphaned vectors, without indexing anything",
+    )
+    prune.add_argument(
+        "path",
+        type=Path,
+        nargs="?",
+        help="Limit removed-source pruning to entries beneath this path (default: the whole index)",
+    )
+    prune.add_argument("--dry-run", action="store_true", help="Report what would be deleted and change nothing")
 
     search = commands.add_parser("search", help="Search indexed academic passages")
     search.add_argument("query")
@@ -72,20 +84,30 @@ def _run(args: argparse.Namespace) -> int:
     )
     logging.getLogger("thegenie").setLevel("DEBUG" if args.verbose else app.settings.log_level)
     if args.command == "ingest":
+        # transformers' own "Loading weights" bar is sub-second noise here, and because it
+        # is created while our bar is live, tqdm gives it a second position and the cursor
+        # moves leave a duplicate copy of it on screen. Silencing it costs no imports.
+        os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+
         from tqdm import tqdm
 
-        bar: Any = None
+        # One bar only. Nested positioned bars fight over the cursor with any bar a
+        # dependency creates, so chunk progress rides in this bar's postfix instead.
+        documents = tqdm(total=None, desc="Ingesting", unit="doc", dynamic_ncols=True)
+
+        def _activity(key: str, done: int, total: int) -> None:
+            """Show live chunk progress while one document is embedded (the slow part)."""
+            counted = f"{done}/{total} chunks" if total else "reading"
+            documents.set_postfix_str(f"{Path(key).name[:38]} {counted}")
 
         def _progress(done: int, total: int, item: Any) -> None:
-            nonlocal bar
-            if bar is None:
-                bar = tqdm(total=total, desc="Ingesting", unit="doc", dynamic_ncols=True)
-            bar.set_postfix_str(str(item.source_path), refresh=False)
-            bar.update(1)
+            if documents.total != total:
+                documents.total = total
+            documents.set_postfix_str(f"{item.status} {Path(str(item.source_path)).name[:38]}", refresh=False)
+            documents.update(1)
 
-        report = app.ingest(args.path, prune=args.prune, on_progress=_progress)
-        if bar is not None:
-            bar.close()
+        report = app.ingest(args.path, on_progress=_progress, on_activity=_activity)
+        documents.close()
         for item in report.items:
             detail = f" ({item.chunk_count} chunks)" if item.chunk_count else ""
             if item.error:
@@ -93,6 +115,18 @@ def _run(args: argparse.Namespace) -> int:
             print(f"{item.status}: {item.source_path}{detail}")
         print(f"found {report.found}; updated {report.updated_chunks} chunks")
         return 1 if any(item.status == "failed" for item in report.items) else 0
+
+    if args.command == "prune":
+        report = app.prune(args.path, dry_run=args.dry_run)
+        prefix = "would remove" if report.dry_run else "removed"
+        for item in report.items:
+            detail = f": {item.error}" if item.error else f" ({item.chunk_count} chunks)"
+            print(f"{prefix} {item.reason}: {item.source_path}{detail}")
+        if not report.items:
+            print("nothing to prune")
+        else:
+            print(f"{prefix} {report.removed_chunks} chunks from {len(report.items)} entries")
+        return 1 if any(item.error for item in report.items) else 0
 
     if args.command == "search":
         from thegenie.retrieval import format_human
