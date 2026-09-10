@@ -8,6 +8,8 @@ TheGenie retrieves evidence; it is not a second writer model. OpenCode receives 
 
 New to TheGenie? [How TheGenie works, explained simply](docs/how-it-works-eli5.md) is a plain-language walkthrough of the whole pipeline before diving into the technical setup below.
 
+Upgrading? [`CHANGELOG.md`](CHANGELOG.md) records notable changes, including the breaking replacement of `ingest --prune` with the standalone `prune` command in 0.2.0.
+
 ## Architecture
 
 ```mermaid
@@ -200,13 +202,25 @@ Ingestion recursively discovers PDFs. New and changed files are indexed; unchang
 
 Changed documents keep their persistent document ID. New chunks are inserted before points for the old document hash are deleted, and a failed replacement leaves the previous valid index intact.
 
-Missing files are not removed by default. After confirming the scanned root is correct, explicitly prune entries missing beneath it:
+Ingestion never deletes anything. Removing stale index data is a separate command that indexes nothing and loads no model:
 
 ```bash
-uv run thegenie ingest ./documents --prune
+uv run thegenie prune --dry-run   # report what would be deleted
+uv run thegenie prune             # delete it
 ```
 
-Do not use `--prune` casually against a narrow subdirectory.
+`prune` removes two kinds of stale data:
+
+- `missing_source` — the manifest lists a PDF that has been deleted from disk.
+- `orphan_vectors` — Qdrant holds points the manifest does not account for. Because chunk batches are upserted before the manifest entry is written, an ingest run interrupted mid-document leaves points behind, and a retry allocates a fresh document ID, so nothing else reclaims them. Until pruned they stay searchable and citable as a partial duplicate.
+
+Pass a path to limit the `missing_source` pass to entries beneath it. The `orphan_vectors` sweep is always index-wide, since an orphaned group has no manifest entry to scope it by:
+
+```bash
+uv run thegenie prune ./documents/subfolder
+```
+
+Run `prune --dry-run` first when the scope is narrow.
 
 ### 7. Search and inspect evidence
 
@@ -435,7 +449,17 @@ Phase 1 deliberately has no automated test suite. Run this acceptance flow after
 
 6. Exercise failures manually with copies of the draft: malformed and unknown markers, a changed/missing PDF, a wrong number, an exaggerated or contradictory claim, and a fabricated quotation. Confirm the reported categories are actionable. Restore/reingest the source after mutation checks.
 
-7. Add the OpenCode config above, restart OpenCode, run `opencode mcp list`, and issue the explicit integration prompt. Confirm the visible tool trace contains the real MCP invocation and that its passage/page match CLI resolution and the PDF.
+7. Check pruning with a disposable PDF. Ingest it, delete the file from `documents/`, then run:
+
+   ```bash
+   uv run thegenie prune --dry-run
+   uv run thegenie prune
+   uv run thegenie prune
+   ```
+
+   Accept only if the dry run reports the entry as `missing_source` and changes nothing, the real run removes it, the second real run reports `nothing to prune`, and the Qdrant `points_count` afterwards equals the sum of `chunk_count` across `data/metadata/index.json`. That equality is the check for orphaned vectors.
+
+8. Add the OpenCode config above, restart OpenCode, run `opencode mcp list`, and issue the explicit integration prompt. Confirm the visible tool trace contains the real MCP invocation and that its passage/page match CLI resolution and the PDF.
 
 Record exactly which steps passed, failed, or were unavailable. Passing these smoke checks completes only Phase 1 manual acceptance. Full project acceptance requires the deferred Phase 2 automated regression, integration, real-model, MCP, and adversarial benchmark coverage.
 
@@ -487,11 +511,21 @@ The PDF may be scanned, image-only, encrypted, or have a difficult text layer. O
 
 ### Out-of-memory or very slow inference
 
-Reduce `RAG_EMBEDDING_BATCH_SIZE`, keep `RAG_DEVICE=cpu` unless a compatible accelerator is configured, close competing workloads, and expect the first model load to be slower. Large BGE models are computationally expensive.
+Reduce `RAG_EMBEDDING_BATCH_SIZE` if memory is the constraint, keep `RAG_DEVICE=cpu` unless a compatible accelerator is configured, close competing workloads, and expect the first model load to be slower. Large BGE models are computationally expensive.
+
+Do not expect batch size or thread count to improve CPU throughput. On CPU, bge-m3 embedding is memory-bandwidth bound rather than core bound: on one 8-core machine, 4, 8, and 16 torch threads measured 4210, 3943, and 3901 ms per 1000-token chunk, and batch sizes 8, 16, and 32 were within noise of each other. Embedding dominates ingestion at roughly 1.8 s per 512-token chunk, so a 70-chunk paper takes about two minutes and low apparent CPU utilization is expected.
+
+### Ingestion seems to take far too long on one PDF
+
+Ingest prints the current filename and its embedded-chunk count, so compare progress against the figures above. If the chunk counter never appears, the document is still being extracted or chunked, which normally takes well under a second per paper — a document stuck there for minutes is not embedding.
+
+Versions before 0.2.0 contained a chunking defect that could loop forever on certain documents, presenting as an ingest that never finishes rather than as an error. If you are on an older version, upgrade; see `CHANGELOG.md`.
 
 ### Search returns irrelevant or duplicate passages
 
 Use a more specific query, increase `--top-k` only when needed, or use `--document-filter`. Tune `RAG_VECTOR_CANDIDATES`, `RAG_RESULT_COUNT`, and `RAG_DEDUPLICATION_THRESHOLD` cautiously. Dense retrieval can miss relevant evidence and reranking can be wrong.
+
+If near-duplicate passages appear from a document you only indexed once, an earlier interrupted ingest may have left orphaned vectors behind. Run `uv run thegenie prune --dry-run` to check, then `uv run thegenie prune` to remove them.
 
 ### Citation reports changed or missing sources
 
@@ -539,7 +573,8 @@ Inspect the exact cited passage, numbers, negation, attribution, scope, and moda
 All operations use the single `thegenie` entry point:
 
 ```text
-thegenie ingest PATH [--prune]
+thegenie ingest PATH
+thegenie prune [PATH] [--dry-run]
 thegenie search QUERY [--top-k N] [--document-filter VALUE]
 thegenie reference CITATION_ID
 thegenie citations DOCUMENT

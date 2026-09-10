@@ -8,8 +8,8 @@ read-only stdio server: `thegenie mcp`. It provides exactly three tools:
 - `list_documents()` — filenames, document IDs, chunk counts, and index
   timestamps for what's currently ingested; no document text.
 
-No agent runs `thegenie ingest`, `search`, `verify`, `revise`, `health`, or
-`models download` through MCP. Those remain human-operated CLI commands (see
+No agent runs `thegenie ingest`, `prune`, `search`, `verify`, `revise`, `health`,
+or `models download` through MCP. Those remain human-operated CLI commands (see
 the main `README.md`). The agent only ever talks to the tools above.
 
 ## Before configuring any agent

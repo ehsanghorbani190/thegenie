@@ -115,6 +115,8 @@ Files classify as new, changed, or unchanged:
 
 Default ingestion does not delete entries for missing files, allowing citation verification to report missing sources. `--prune` explicitly deletes manifest entries and vectors missing beneath the scanned root. This avoids accidental deletion when indexing a subdirectory.
 
+> **Superseded in 0.2.0.** The `ingest --prune` flag was replaced by a standalone `thegenie prune [PATH] [--dry-run]` command, because coupling deletion to ingestion meant pruning one removed file also re-indexed the entire scanned root. The upsert-before-manifest order recorded above is also now known to orphan vectors when a run is interrupted; `prune` reclaims them. See `CHANGELOG.md`.
+
 Output reports found, unchanged, changed, new, per-document chunk counts, failures, and total updated chunks. Logs never include full document text.
 
 ## Qdrant

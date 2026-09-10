@@ -87,7 +87,7 @@ exact passage — not just a sourced-sounding answer.
 
 Claude Code starts exactly one long-running process, `thegenie mcp`, and only
 calls `search_references`, `get_reference`, and `list_documents` through it.
-It does **not** run `thegenie ingest`, `search`, `reference`, `verify`,
+It does **not** run `thegenie ingest`, `prune`, `search`, `reference`, `verify`,
 `revise`, `citations`, `health`, or `models download` — those remain commands
 you run yourself in a terminal.
 

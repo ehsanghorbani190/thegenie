@@ -139,6 +139,8 @@ thegenie ingest ./documents --prune
 
 Manual check: new, unchanged, modified, duplicate, missing, and prune flows.
 
+> **Superseded in 0.2.0.** `ingest --prune` became the standalone `thegenie prune [PATH] [--dry-run]` command. See `CHANGELOG.md`.
+
 ### 8. Retrieval and formatting
 
 Implement:

@@ -112,11 +112,12 @@ Regardless of client, only three read-only tools are exposed:
 - `list_documents()` — filenames, document IDs, chunk counts, and index
   timestamps for what's currently ingested; no document text.
 
-No agent can ingest documents, run verification, check health, or download
-models through MCP — those are commands you run yourself:
-`thegenie ingest`, `thegenie verify`, `thegenie revise`, `thegenie citations`,
-`thegenie health`, `thegenie models download`. If an agent's response implies
-it "re-indexed" or "checked health," it did not — it has no tool to do that.
+No agent can ingest documents, delete indexed data, run verification, check
+health, or download models through MCP — those are commands you run yourself:
+`thegenie ingest`, `thegenie prune`, `thegenie verify`, `thegenie revise`,
+`thegenie citations`, `thegenie health`, `thegenie models download`. If an
+agent's response implies it "re-indexed" or "checked health," it did not — it
+has no tool to do that.
 
 ## Carrying over the evidence-discipline instructions
 

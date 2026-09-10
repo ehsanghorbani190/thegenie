@@ -79,4 +79,4 @@ OpenCode starts one long-running stdio process:
 uv run --directory /ABSOLUTE/PATH/TO/thegenie thegenie mcp
 ```
 
-Through that process, OpenCode may invoke only the read-only MCP tools `search_references`, `get_reference`, and `list_documents`. Other `thegenie` commands—ingestion, direct search/reference inspection, citation listing, verification, revision planning, health, and model download—are operator workflows, not MCP tools. When evidence use is questioned, inspect OpenCode’s visible tool trace and identify the actual MCP tool invocation rather than asserting that retrieval occurred.
+Through that process, OpenCode may invoke only the read-only MCP tools `search_references`, `get_reference`, and `list_documents`. Other `thegenie` commands—ingestion, pruning, direct search/reference inspection, citation listing, verification, revision planning, health, and model download—are operator workflows, not MCP tools. When evidence use is questioned, inspect OpenCode’s visible tool trace and identify the actual MCP tool invocation rather than asserting that retrieval occurred.
