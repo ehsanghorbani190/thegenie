@@ -81,7 +81,11 @@ def _page_chunks(text: str, target_size: int, overlap: int, count: TokenCounter)
         while next_start > start and retained + count(units[next_start - 1]) <= overlap:
             next_start -= 1
             retained += count(units[next_start])
-        start = next_start if next_start < end else end
+        # The overlap rewind must never reclaim the whole window: if every unit fits
+        # inside `overlap`, next_start lands back on `start` and the loop never ends.
+        # Advancing by at least one unit keeps the intended overlap where possible
+        # while guaranteeing termination (`next_start <= end`, so this stays in range).
+        start = max(next_start, start + 1)
     return chunks
 
 
