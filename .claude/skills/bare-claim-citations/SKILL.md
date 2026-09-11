@@ -25,8 +25,9 @@ the same sentence that's being tested adds nothing but risk.
 
 ## The rule
 
-**Write the cited sentence as the bare proposition. Do not wrap it in a reporting
-clause.** Put the marker directly on the plain claim.
+**The guaranteed-safe default is to write the cited sentence as the bare
+proposition** and put the marker directly on the plain claim, with any named
+attribution moved to a separate clause that carries no marker.
 
 | Don't | Do |
 |---|---|
@@ -37,8 +38,11 @@ clause.** Put the marker directly on the plain claim.
 | طبق گزارش توتول و همکاران، اعتماد به هوش مصنوعی افزایش می‌یابد `[[REF:abc123]]`. | اعتماد به هوش مصنوعی افزایش می‌یابد `[[REF:abc123]]`. |
 | در این پژوهش، اعتماد به هوش مصنوعی افزایش می‌یابد `[[REF:abc123]]`. | اعتماد به هوش مصنوعی افزایش می‌یابد `[[REF:abc123]]`. |
 
-Patterns to avoid immediately before a cited claim (non-exhaustive — the underlying
-issue is any reporting/reported-speech frame, not this exact word list):
+Patterns to avoid immediately before a cited claim when you cannot use the
+"safe template" below (non-exhaustive — the underlying issue is any
+reporting/reported-speech frame the verifier's stripper doesn't recognize, or
+one placed anywhere but the very start of the cited sentence, not this exact
+word list):
 
 - "X et al. found / showed / reported / argued / demonstrated / concluded / noted /
   observed / stated / claimed / suggested / indicated that ..."
@@ -46,6 +50,64 @@ issue is any reporting/reported-speech frame, not this exact word list):
 - "In this/that/the study/paper/research/article/work, ..."
 - "This/that/the study/paper found/showed/reported that ..."
 - Persian: "طبق گزارش X،" / "به گفته X،" / "در این پژوهش،" / "X نشان داد که"
+
+## If you want "X et al. found that ..." prose on the surface
+
+TheGenie's verifier (`strip_reporting_frame` in
+`src/thegenie/verification/checks.py`) already strips a *leading* reporting
+clause from the cited sentence before NLI scoring, specifically so ordinary
+academic attribution phrasing doesn't collapse an otherwise-supported claim's
+score. Confirmed directly against the current implementation:
+
+```
+"Tutul et al. found that trust in AI increases over time."
+  -> stripped to: "trust in AI increases over time."
+"Tutul et al. (2024) found that trust in AI increases over time."
+  -> stripped to: "trust in AI increases over time."
+```
+
+So writing the reporting clause directly onto the cited sentence is safe —
+**but only under a narrow, verified template**:
+
+1. **The reporting clause must be the very first thing in the sentence that
+   carries the marker.** The stripper anchors at the start of the text
+   (`^\s*`); a trailing or embedded attribution ("Trust increases over time,
+   as Tutul et al. report `[[REF:abc123]]`.") is not stripped and has not
+   been measured as safe — treat it as the risky, unverified case, not a
+   second safe form.
+2. **The reporting verb must be on the supported list**: found / shows /
+   showed / reports / reported / argues / argued / demonstrates /
+   demonstrated / concludes / concluded / notes / noted / observes / observed
+   / states / stated / claims / claimed / suggests / suggested / indicates /
+   indicated (plus the `"according to X,"` / `"in this study,"` frames, and
+   their Persian equivalents in the checker). A reporting verb outside this
+   list ("posits," "contends," "documents," "reveals," …) is not stripped and
+   falls back to the same collapse risk the "Don't" column above describes.
+
+Safe template: **`<Author(s)> [et al.] [(YEAR)] <supported-verb> that <bare
+claim> [[REF:citation-id]].`** — e.g. "Tutul et al. (2024) found that trust
+in AI increases over time `[[REF:abc123]]`." is safe today, verified against
+the actual stripping regex.
+
+**One more real caveat, not a theoretical one:** a *separate* check
+(`attribution_check`) validates a named author against that source's
+`authors` metadata from `get_reference` **when metadata is present** — but in
+practice, for PDFs whose Info/XMP dictionary doesn't carry populated
+title/author fields (common for publisher-distributed academic PDFs;
+verified empty across multiple documents in this project's own corpus,
+scanned and born-digital alike), `get_reference` returns `authors: []` and
+this check silently no-ops ("no author metadata for attribution comparison")
+rather than confirming or rejecting the name. A passing verification is
+**not** proof the named author is correct in that situation — get it right
+from the source passage's own text (author names are usually visible in the
+retrieved chunk itself, e.g. "Mayer et al., 1995") rather than trusting the
+verifier to catch a wrong name.
+
+Anything that doesn't fit the safe template — an unsupported verb, or
+attribution anywhere but the leading clause — falls back to the split-clause
+form: state the bare claim with its marker, and put the named attribution in
+an adjacent clause or sentence that does not itself carry a citation marker
+(see the next section).
 
 ## When naming the source in prose actually matters
 

@@ -399,8 +399,6 @@ Only the small number of passages selected by MCP enter OpenCode’s conversatio
 
 Avoid enabling unrelated MCP servers unnecessarily: their tool schemas and outputs also consume context.
 
-Token/cost savings from retrieval are real but bounded by how the search-per-claim workflow is actually used — right-sizing `top_k`, grouping tightly related claims, and not re-fetching passages already in context matter as much as retrieval itself. See the `genie-retrieval-economy` skill in `docs/setup/`.
-
 ## Phase 1 manual acceptance
 
 Phase 1 deliberately has no automated test suite. Run this acceptance flow after setup, using a PDF whose content and page number you can inspect manually.
