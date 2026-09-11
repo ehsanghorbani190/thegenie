@@ -399,6 +399,8 @@ Only the small number of passages selected by MCP enter OpenCode’s conversatio
 
 Avoid enabling unrelated MCP servers unnecessarily: their tool schemas and outputs also consume context.
 
+Token/cost savings from retrieval are real but bounded by how the search-per-claim workflow is actually used — right-sizing `top_k`, grouping tightly related claims, and not re-fetching passages already in context matter as much as retrieval itself. See the `genie-retrieval-economy` skill in `docs/setup/`.
+
 ## Phase 1 manual acceptance
 
 Phase 1 deliberately has no automated test suite. Run this acceptance flow after setup, using a PDF whose content and page number you can inspect manually.
@@ -558,7 +560,7 @@ Inspect the exact cited passage, numbers, negation, attribution, scope, and moda
 - Claim extraction, citation-to-claim association, deterministic rules, and NLI can be wrong.
 - Persian and multilingual verification quality depends on the selected models and source text quality. Cross-lingual claim verification (e.g. a Persian claim citing an English source) has been tested and works well for entailment/contradiction, and Persian-script digits are normalized to match Latin-digit values in a source. However, exact-quote verification only matches literal source wording: a **translated** quotation wrapped in quotation marks (e.g. paraphrasing an English sentence into Persian and quoting that translation) will report `QUOTE_MISMATCH` even when the translation is accurate. Quote only in the source's own original language and script; state translated content as a paraphrase, without quotation marks.
 - Write cited claims as the bare proposition, not wrapped in reporting phrases like "X et al. found that," "According to X," or "In this study,". The `[[REF:...]]` marker already carries attribution; wrapping the same sentence in reporting language can weaken the automated semantic verification step even when the underlying claim is fully supported. See `AGENTS.md` and the citation-style skill in `docs/setup/`.
-- PDF extraction can reorder or omit text; OCR is not included.
+- PDF extraction can reorder text. For a page with little or no embedded text (a scanned/image-only page), extraction falls back to OCR via the system `tesseract` binary if it is installed; if `tesseract` isn't on PATH, that page's warning is reported instead and its text stays sparse. This fallback recovers page text but not layout, so headings/sections are not detected on OCR'd pages. It is not a full document OCR pipeline — for a document that is entirely scanned, sourcing a genuine text-based copy of the PDF is still the more reliable fix.
 - Chunks never span pages, which improves citation clarity but can separate context.
 - Source metadata may be absent; TheGenie deliberately leaves uncertain fields empty.
 - Verification evaluates cited passages, not the complete literature or real-world truth.

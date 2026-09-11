@@ -184,7 +184,13 @@ class IngestionPipeline:
                 )
                 self._write_manifest(manifest)
                 updated_chunks += len(chunks)
-                item = IngestionItem(source_path=Path(key), status=status, document_id=document_id, chunk_count=len(chunks))
+                item = IngestionItem(
+                    source_path=Path(key),
+                    status=status,
+                    document_id=document_id,
+                    chunk_count=len(chunks),
+                    warnings=extracted.warnings,
+                )
                 items.append(item)
                 report(item)
             except Exception as exc:

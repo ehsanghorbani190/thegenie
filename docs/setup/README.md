@@ -142,3 +142,40 @@ its debug/skill-listing command if the client provides one.
 If your agent doesn't support the `SKILL.md` format at all, paste the file's
 contents into its system prompt, project rules, or `AGENTS.md`/`CLAUDE.md`
 instead — it's plain Markdown with no TheGenie-specific tooling dependency.
+
+## The `genie-retrieval-economy` skill
+
+The AGENTS.md workflow (search per claim, inspect every passage, resolve
+provenance before citing) is deliberately granular, and granular means many
+small MCP round trips. Measured directly on this project's own corpus, that
+bought real citation integrity at only a modest cost saving and a *larger*
+final context than a plain agent skimming the same PDFs with its own file
+tools — not a bug, but not the token/cost win people expect from "only
+retrieve the relevant passages" either, unless the retrieval calls themselves
+are used economically. This skill is the counterpart to
+`bare-claim-citations`: instead of guarding *verification correctness*, it
+guards *retrieval economy* — right-sized `top_k`, grouping tightly related
+claims into one search, not re-fetching a passage already in context, keeping
+the MCP session state stable, and not running unrelated MCP servers during a
+retrieval-heavy session — without ever trading away the search → inspect →
+cite discipline itself.
+
+It ships at the same path convention as `bare-claim-citations`:
+
+- `.claude/skills/genie-retrieval-economy/SKILL.md`
+
+Installation, discovery, and verification work identically to
+`bare-claim-citations` above — copy the folder per-project, or globally:
+
+```bash
+# Global (every project, on this machine)
+mkdir -p ~/.config/opencode/skills ~/.claude/skills
+cp -r /ABSOLUTE/PATH/TO/thegenie/.claude/skills/genie-retrieval-economy ~/.config/opencode/skills/
+cp -r /ABSOLUTE/PATH/TO/thegenie/.claude/skills/genie-retrieval-economy ~/.claude/skills/
+```
+
+If your setup already places global skills under `~/.agents/skills/` instead
+(some OpenCode configurations use this as the shared lookup path alongside
+`~/.config/opencode/skills/` and `~/.claude/skills/`), copy there and symlink
+`~/.claude/skills/genie-retrieval-economy` to it so Claude Code picks up the
+same file without a duplicate copy to keep in sync.

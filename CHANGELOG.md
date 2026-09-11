@@ -10,6 +10,49 @@ Verification claims in this file refer to manual smoke checks. Phase 1 does not
 include automated tests or benchmark evaluation (see the implementation plan in
 `docs/superpowers/specs/`).
 
+## [0.3.0] — 2026-09-11
+
+### Added
+
+- **OCR fallback for image-only/scanned pages.** `extract_pdf` in
+  `src/thegenie/pdf/extraction.py` previously only flagged a page as
+  "image-only" when its embedded text was completely empty. That missed pages
+  that carry a small amount of incidental real text — page numbers, running
+  headers, a distributor's "reproduced with permission" stamp — while the
+  actual body content is a raster scan with no text layer at all. Any page
+  whose extracted text falls under `_MIN_PAGE_TEXT_CHARS` (200 chars) is now
+  rendered at 300 DPI and OCR'd via the system `tesseract` binary as a
+  fallback; if OCR recovers more text than was embedded, the page's text is
+  replaced and a warning records what happened. If `tesseract` isn't
+  installed, ingestion still succeeds with the pre-existing sparse-text
+  warning instead of failing.
+
+  Found via a real corpus gap: `10.1518.hfes.46.1.50.30392.pdf` — Lee & See
+  (2004), "Trust in Automation: Designing for Appropriate Reliance", the most
+  heavily cited paper in a 51-PDF human-agent-trust corpus — is a genuine
+  scan (`Producer: image2pdf.c`) whose only real embedded text was the
+  copyright stamp, repeated once per page. It ingested without error (31
+  chunks, all near-identical boilerplate) and was therefore silently
+  unsearchable; claims that should have cited this primary source were
+  instead sourced through secondary papers that paraphrase it. Re-ingesting
+  after this fix recovered the actual body text on all 31 pages (3,255 total
+  extracted chars before, 151,944 after) and produced 97 real, searchable
+  chunks.
+
+- **Ingest surfaces extraction warnings.** `ExtractedDocument.warnings` was
+  already populated per page but never read anywhere past extraction. It is
+  now attached to `IngestionItem.warnings` and printed by the `ingest` CLI
+  command (`  ! <warning>`), so a sparse-text or OCR-fallback page is visible
+  at ingest time instead of only discoverable by manually auditing
+  `pdftotext` output per file.
+
+### Notes
+
+- This is a fallback for individual sparse-text pages, not a general OCR
+  pipeline: it recovers text but not layout (OCR'd pages contribute no
+  heading/section metadata), and a fully scanned document is still better
+  served by sourcing a genuine text-based copy when one exists.
+
 ## [0.2.0] — 2026-09-11
 
 Breaking release. `ingest --prune` is gone, replaced by a standalone `prune`

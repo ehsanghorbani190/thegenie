@@ -113,6 +113,8 @@ def _run(args: argparse.Namespace) -> int:
             if item.error:
                 detail = f": {item.error}"
             print(f"{item.status}: {item.source_path}{detail}")
+            for warning in item.warnings:
+                print(f"  ! {warning}")
         print(f"found {report.found}; updated {report.updated_chunks} chunks")
         return 1 if any(item.status == "failed" for item in report.items) else 0
 

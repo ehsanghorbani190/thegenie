@@ -73,6 +73,7 @@ class IngestionItem(Model):
     document_id: UUID | None = None
     chunk_count: int = Field(default=0, ge=0)
     error: str | None = None
+    warnings: tuple[str, ...] = ()
 
 
 class IngestionReport(Model):
